@@ -1,10 +1,12 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import projectService from '../services/projectService'
 
-const CreateProject = () => {
+const EditProject = () => {
+  const { id } = useParams()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [fetchLoading, setFetchLoading] = useState(true)
   const [error, setError] = useState('')
 
   const [formData, setFormData] = useState({
@@ -23,33 +25,49 @@ const CreateProject = () => {
     githubRepo: '',
     mentorName: '',
     mentorEmail: '',
-    skills: [{ skillName: '', requiredLevel: 'Beginner' }]
+    status: 'Recruiting',
+    skills: []
   })
 
   const domains = [
-    'Web Development',
-    'Mobile Development',
-    'Machine Learning',
-    'Data Science',
-    'Artificial Intelligence',
-    'Cloud Computing',
-    'Cybersecurity',
-    'Blockchain',
-    'IoT',
-    'Game Development',
-    'DevOps',
-    'Other'
+    'Web Development', 'Mobile Development', 'Machine Learning',
+    'Data Science', 'Artificial Intelligence', 'Cloud Computing',
+    'Cybersecurity', 'Blockchain', 'IoT', 'Game Development', 'DevOps', 'Other'
   ]
 
-  const projectTypes = [
-    'Web Application',
-    'Mobile App',
-    'Desktop Application',
-    'API/Backend',
-    'Research',
-    'Open Source',
-    'Other'
-  ]
+  useEffect(() => {
+    fetchProject()
+  }, [id])
+
+  const fetchProject = async () => {
+    try {
+      const { data } = await projectService.getProject(id)
+      const project = data.data
+      setFormData({
+        title: project.title,
+        description: project.description,
+        domain: project.domain,
+        projectType: project.projectType,
+        projectLevel: project.projectLevel,
+        teamSize: project.teamSize,
+        minimumYear: project.minimumYear,
+        maximumYear: project.maximumYear,
+        meetingMode: project.meetingMode,
+        location: project.location || '',
+        recruitmentDeadline: new Date(project.recruitmentDeadline).toISOString().split('T')[0],
+        deadline: new Date(project.deadline).toISOString().split('T')[0],
+        githubRepo: project.githubRepo || '',
+        mentorName: project.mentorName || '',
+        mentorEmail: project.mentorEmail || '',
+        status: project.status,
+        skills: project.skills?.length > 0 ? project.skills : [{ skillName: '', requiredLevel: 'Beginner' }]
+      })
+    } catch (err) {
+      setError('Failed to load project')
+    } finally {
+      setFetchLoading(false)
+    }
+  }
 
   const handleChange = (e) => {
     setFormData({
@@ -61,10 +79,7 @@ const CreateProject = () => {
   const handleSkillChange = (index, field, value) => {
     const updatedSkills = [...formData.skills]
     updatedSkills[index][field] = value
-    setFormData({
-      ...formData,
-      skills: updatedSkills
-    })
+    setFormData({ ...formData, skills: updatedSkills })
   }
 
   const addSkill = () => {
@@ -75,10 +90,9 @@ const CreateProject = () => {
   }
 
   const removeSkill = (index) => {
-    const updatedSkills = formData.skills.filter((_, i) => i !== index)
     setFormData({
       ...formData,
-      skills: updatedSkills
+      skills: formData.skills.filter((_, i) => i !== index)
     })
   }
 
@@ -88,7 +102,6 @@ const CreateProject = () => {
     setError('')
 
     try {
-      // Filter out empty skills
       const projectData = {
         ...formData,
         skills: formData.skills.filter(skill => skill.skillName.trim() !== ''),
@@ -97,18 +110,26 @@ const CreateProject = () => {
         maximumYear: parseInt(formData.maximumYear)
       }
 
-      await projectService.createProject(projectData)
-      navigate('/my-projects')
+      await projectService.updateProject(id, projectData)
+      navigate(`/projects/${id}`)
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create project')
+      setError(err.response?.data?.message || 'Failed to update project')
     } finally {
       setLoading(false)
     }
   }
 
+  if (fetchLoading) {
+    return (
+      <div className="text-center py-8">
+        <div className="spinner"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">Create New Project</h1>
+      <h1 className="text-3xl font-bold mb-8">Edit Project</h1>
 
       {error && (
         <div className="alert alert-error mb-4">
@@ -118,7 +139,6 @@ const CreateProject = () => {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* Basic Information */}
         <div className="card mb-6">
           <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
           <div className="space-y-4">
@@ -131,7 +151,6 @@ const CreateProject = () => {
                 onChange={handleChange}
                 className="form-input"
                 required
-                placeholder="Enter project title"
               />
             </div>
 
@@ -144,20 +163,13 @@ const CreateProject = () => {
                 className="form-textarea"
                 rows="6"
                 required
-                placeholder="Describe your project in detail..."
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="form-label">Domain *</label>
-                <select
-                  name="domain"
-                  value={formData.domain}
-                  onChange={handleChange}
-                  className="form-select"
-                  required
-                >
+                <select name="domain" value={formData.domain} onChange={handleChange} className="form-select" required>
                   <option value="">Select Domain</option>
                   {domains.map(domain => (
                     <option key={domain} value={domain}>{domain}</option>
@@ -166,30 +178,30 @@ const CreateProject = () => {
               </div>
 
               <div>
-                <label className="form-label">Project Type *</label>
-                <select
-                  name="projectType"
-                  value={formData.projectType}
-                  onChange={handleChange}
-                  className="form-select"
-                  required
-                >
-                  <option value="">Select Type</option>
-                  {projectTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
+                <label className="form-label">Status *</label>
+                <select name="status" value={formData.status} onChange={handleChange} className="form-select" required>
+                  <option value="Recruiting">Recruiting</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                  <option value="On Hold">On Hold</option>
                 </select>
               </div>
 
               <div>
-                <label className="form-label">Project Level *</label>
-                <select
-                  name="projectLevel"
-                  value={formData.projectLevel}
+                <label className="form-label">Project Type *</label>
+                <input
+                  type="text"
+                  name="projectType"
+                  value={formData.projectType}
                   onChange={handleChange}
-                  className="form-select"
+                  className="form-input"
                   required
-                >
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Project Level *</label>
+                <select name="projectLevel" value={formData.projectLevel} onChange={handleChange} className="form-select" required>
                   <option value="Beginner">Beginner</option>
                   <option value="Intermediate">Intermediate</option>
                   <option value="Advanced">Advanced</option>
@@ -198,13 +210,7 @@ const CreateProject = () => {
 
               <div>
                 <label className="form-label">Meeting Mode *</label>
-                <select
-                  name="meetingMode"
-                  value={formData.meetingMode}
-                  onChange={handleChange}
-                  className="form-select"
-                  required
-                >
+                <select name="meetingMode" value={formData.meetingMode} onChange={handleChange} className="form-select" required>
                   <option value="Online">Online</option>
                   <option value="Offline">Offline</option>
                   <option value="Hybrid">Hybrid</option>
@@ -220,7 +226,6 @@ const CreateProject = () => {
                     value={formData.location}
                     onChange={handleChange}
                     className="form-input"
-                    placeholder="Enter meeting location"
                   />
                 </div>
               )}
@@ -228,7 +233,6 @@ const CreateProject = () => {
           </div>
         </div>
 
-        {/* Team Configuration */}
         <div className="card mb-6">
           <h2 className="text-xl font-semibold mb-4">Team Configuration</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -276,7 +280,6 @@ const CreateProject = () => {
           </div>
         </div>
 
-        {/* Required Skills */}
         <div className="card mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Required Skills</h2>
@@ -293,7 +296,6 @@ const CreateProject = () => {
                   value={skill.skillName}
                   onChange={(e) => handleSkillChange(index, 'skillName', e.target.value)}
                   className="form-input"
-                  placeholder="e.g., React, Python"
                 />
               </div>
               <div>
@@ -310,11 +312,7 @@ const CreateProject = () => {
               </div>
               <div>
                 {formData.skills.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeSkill(index)}
-                    className="btn-danger btn-sm"
-                  >
+                  <button type="button" onClick={() => removeSkill(index)} className="btn-danger btn-sm">
                     Remove
                   </button>
                 )}
@@ -323,89 +321,11 @@ const CreateProject = () => {
           ))}
         </div>
 
-        {/* Deadlines */}
-        <div className="card mb-6">
-          <h2 className="text-xl font-semibold mb-4">Deadlines</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="form-label">Recruitment Deadline *</label>
-              <input
-                type="date"
-                name="recruitmentDeadline"
-                value={formData.recruitmentDeadline}
-                onChange={handleChange}
-                className="form-input"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Project Deadline *</label>
-              <input
-                type="date"
-                name="deadline"
-                value={formData.deadline}
-                onChange={handleChange}
-                className="form-input"
-                required
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Additional Information */}
-        <div className="card mb-6">
-          <h2 className="text-xl font-semibold mb-4">Additional Information</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="form-label">GitHub Repository</label>
-              <input
-                type="url"
-                name="githubRepo"
-                value={formData.githubRepo}
-                onChange={handleChange}
-                className="form-input"
-                placeholder="https://github.com/username/repository"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="form-label">Mentor Name</label>
-                <input
-                  type="text"
-                  name="mentorName"
-                  value={formData.mentorName}
-                  onChange={handleChange}
-                  className="form-input"
-                  placeholder="Enter mentor name"
-                />
-              </div>
-
-              <div>
-                <label className="form-label">Mentor Email</label>
-                <input
-                  type="email"
-                  name="mentorEmail"
-                  value={formData.mentorEmail}
-                  onChange={handleChange}
-                  className="form-input"
-                  placeholder="mentor@example.com"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className="flex gap-4">
           <button type="submit" className="btn-primary btn-lg" disabled={loading}>
-            {loading ? 'Creating...' : 'Create Project'}
+            {loading ? 'Saving...' : 'Save Changes'}
           </button>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="btn-secondary btn-lg"
-          >
+          <button type="button" onClick={() => navigate(-1)} className="btn-secondary btn-lg">
             Cancel
           </button>
         </div>
@@ -414,4 +334,4 @@ const CreateProject = () => {
   )
 }
 
-export default CreateProject
+export default EditProject
