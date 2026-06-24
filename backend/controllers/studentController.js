@@ -7,7 +7,7 @@ const { AppError } = require('../middleware/errorMiddleware');
 // @access  Public
 const getStudents = async (req, res, next) => {
   try {
-    const { department, year, skill } = req.query;
+    const { department, year, skill, role, experience, availabilityStatus, location, search } = req.query;
     
     let query = {};
     
@@ -21,23 +21,69 @@ const getStudents = async (req, res, next) => {
       query.year = parseInt(year);
     }
 
-    let students = await Student.find(query).select('-password');
+    // Filter by role
+    if (role) {
+      query.role = { $regex: role, $options: 'i' };
+    }
 
-    // Filter by skill if provided
+    // Filter by experience
+    if (experience) {
+      query.experience = { $regex: experience, $options: 'i' };
+    }
+
+    // Filter by availabilityStatus
+    if (availabilityStatus) {
+      query.availabilityStatus = availabilityStatus;
+    }
+
+    // Filter by location
+    if (location) {
+      query.location = { $regex: location, $options: 'i' };
+    }
+
+    // Search by name, role, or skills
+    if (search) {
+      const matchingSkills = await StudentSkill.find({
+        skillName: { $regex: search, $options: 'i' }
+      }).distinct('student');
+
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { role: { $regex: search, $options: 'i' } },
+        { _id: { $in: matchingSkills } }
+      ];
+    }
+
+    // Filter by specific skill input (separate from general search)
     if (skill) {
       const studentSkills = await StudentSkill.find({ 
         skillName: { $regex: skill, $options: 'i' } 
       }).distinct('student');
       
-      students = students.filter(student => 
-        studentSkills.some(s => s.toString() === student._id.toString())
-      );
+      if (query.$or) {
+        query._id = { $in: studentSkills };
+      } else {
+        query._id = { $in: studentSkills };
+      }
     }
+
+    let students = await Student.find(query).select('-password');
+
+    // Populate skills for each student
+    const data = await Promise.all(
+      students.map(async (student) => {
+        const skills = await StudentSkill.find({ student: student._id });
+        return {
+          ...student.toObject(),
+          skills
+        };
+      })
+    );
 
     res.json({
       success: true,
-      count: students.length,
-      data: students
+      count: data.length,
+      data
     });
   } catch (error) {
     next(error);

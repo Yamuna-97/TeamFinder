@@ -89,6 +89,18 @@ const studentSchema = new mongoose.Schema({
     enum: ['Available', 'Busy', 'In a Project'],
     default: 'Available'
   },
+  role: {
+    type: String,
+    default: ''
+  },
+  experience: {
+    type: String,
+    default: ''
+  },
+  location: {
+    type: String,
+    default: ''
+  },
   completedProjects: {
     type: Number,
     default: 0,

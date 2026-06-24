@@ -14,6 +14,7 @@ import EditProject from './pages/EditProject'
 import MyProjects from './pages/MyProjects'
 import Team from './pages/Team'
 import Tasks from './pages/Tasks'
+import FindTeammates from './pages/FindTeammates'
 import NotFound from './pages/NotFound'
 import PrivateRoute from './components/PrivateRoute'
 
@@ -32,6 +33,7 @@ function App() {
           <Route element={<DashboardLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="find-teammates" element={<FindTeammates />} />
             <Route path="projects/create" element={<CreateProject />} />
             <Route path="projects/:id/edit" element={<EditProject />} />
             <Route path="my-projects" element={<MyProjects />} />
