@@ -25,8 +25,6 @@ function App() {
         <Route index element={<Home />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
-        <Route path="projects" element={<Projects />} />
-        <Route path="projects/:id" element={<ProjectDetails />} />
         
         {/* Protected Routes */}
         <Route element={<PrivateRoute />}>
@@ -34,7 +32,9 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="profile" element={<Profile />} />
             <Route path="find-teammates" element={<FindTeammates />} />
+            <Route path="projects" element={<Projects />} />
             <Route path="projects/create" element={<CreateProject />} />
+            <Route path="projects/:id" element={<ProjectDetails />} />
             <Route path="projects/:id/edit" element={<EditProject />} />
             <Route path="my-projects" element={<MyProjects />} />
             <Route path="team/:projectId" element={<Team />} />
