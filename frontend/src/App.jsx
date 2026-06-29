@@ -15,8 +15,9 @@ import MyProjects from './pages/MyProjects'
 import Team from './pages/Team'
 import Tasks from './pages/Tasks'
 import FindTeammates from './pages/FindTeammates'
-import NotFound from './pages/NotFound'
 import PrivateRoute from './components/PrivateRoute'
+import Notifications from './pages/Notifications'
+import NotFound from './pages/NotFound'
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="profile" element={<Profile />} />
             <Route path="find-teammates" element={<FindTeammates />} />
+            <Route path="notifications" element={<Notifications />} />
             <Route path="projects" element={<Projects />} />
             <Route path="projects/create" element={<CreateProject />} />
             <Route path="projects/:id" element={<ProjectDetails />} />
